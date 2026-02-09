@@ -133,7 +133,8 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   },
 
   selectFile: (filePath) => {
-    set({ selectedFiles: [filePath] });
+    // Switch to functions zoom when selecting a file so we see its contents
+    set({ selectedFiles: [filePath], zoomLevel: 'functions' });
     get().updateFlowElements();
   },
 
@@ -142,13 +143,16 @@ export const useGraphStore = create<GraphState>((set, get) => ({
       const files = s.selectedFiles.includes(filePath)
         ? s.selectedFiles.filter((f) => f !== filePath)
         : [...s.selectedFiles, filePath].slice(0, 5); // Max 5
-      return { selectedFiles: files };
+      return { selectedFiles: files, zoomLevel: 'functions' };
     });
     get().updateFlowElements();
   },
 
   clearSelection: () => {
-    set({ selectedFiles: [], selectedNodeId: null, nodeDetail: null });
+    // Revert to modules zoom if project is large
+    const totalNodeCount = get().totalNodeCount;
+    const autoZoom = totalNodeCount > MAX_RENDERED_NODES ? 'modules' : 'functions';
+    set({ selectedFiles: [], selectedNodeId: null, nodeDetail: null, zoomLevel: autoZoom });
     get().updateFlowElements();
   },
 

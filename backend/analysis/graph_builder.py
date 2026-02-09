@@ -37,15 +37,16 @@ def build_graph(project_path: str, exclude_patterns: list[str] | None = None) ->
 
     # Phase 1: Create all nodes
     for result in parse_results:
-        # File node
+        # File node — use relative path (consistent with class/function nodes)
+        rel_path = str(Path(result.file_path).relative_to(project_path))
         file_node_id = generate_id()
-        file_to_node_id[result.file_path] = file_node_id
+        file_to_node_id[rel_path] = file_node_id
         all_nodes.append({
             "id": file_node_id,
             "name": Path(result.file_path).name,
             "type": "file",
             "language": result.language,
-            "file_path": result.file_path,
+            "file_path": rel_path,
             "line_start": None,
             "line_end": None,
             "code_hash": None,

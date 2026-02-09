@@ -13,13 +13,13 @@ export function DetailPanel() {
   const { detailPanelOpen, detailPanelWidth, setDetailPanelOpen, setDetailPanelWidth } = useUIStore();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
-  if (!detailPanelOpen || !selectedNodeId) return null;
+  if (!detailPanelOpen) return null;
 
   const toggleSection = (key: string) => {
     setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const isLoading = !nodeDetail;
+  const isLoading = selectedNodeId && !nodeDetail;
 
   return (
     <div
@@ -73,7 +73,7 @@ export function DetailPanel() {
       >
         <div>
           <div style={{ fontSize: 14, fontWeight: 600 }}>
-            {nodeDetail?.node.name || 'Loading...'}
+            {nodeDetail?.node.name || (selectedNodeId ? 'Loading...' : 'Details')}
           </div>
           {nodeDetail && (
             <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
@@ -89,6 +89,11 @@ export function DetailPanel() {
               {nodeDetail.node.line_start && `:${nodeDetail.node.line_start}`}
             </div>
           )}
+          {!selectedNodeId && (
+            <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
+              Click a node to inspect
+            </div>
+          )}
         </div>
         <button onClick={() => setDetailPanelOpen(false)} style={{ color: colors.textMuted, padding: 4 }}>
           <X size={16} />
@@ -97,7 +102,11 @@ export function DetailPanel() {
 
       {/* Content */}
       <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {isLoading ? (
+        {!selectedNodeId ? (
+          <div style={{ color: colors.textMuted, fontSize: 13, textAlign: 'center', marginTop: 40 }}>
+            Select a node from the graph to see its code, connections, and AI explanation.
+          </div>
+        ) : isLoading ? (
           <div style={{ color: colors.textMuted }}>Loading details...</div>
         ) : (
           <>

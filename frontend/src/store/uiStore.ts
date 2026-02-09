@@ -65,7 +65,7 @@ let toastCounter = 0;
 export const useUIStore = create<UIState>((set, get) => ({
   searchOpen: false,
   settingsOpen: false,
-  detailPanelOpen: false,
+  detailPanelOpen: true,
   detailPanelWidth: 380,
   shortcutOverlayOpen: false,
   contextMenu: null,
