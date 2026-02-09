@@ -1,0 +1,103 @@
+/* CodeGraph — Dark mode only */
+:root {
+  --bg: #0D0D0D;
+  --surface: #1A1A1A;
+  --surface-hover: #222222;
+  --border: #2A2A2A;
+  --border-light: #333333;
+  --text-primary: #E0E0E0;
+  --text-secondary: #808080;
+  --text-muted: #555555;
+  --accent: #4A9EFF;
+  --accent-hover: #5AAEFF;
+  --tested: #4ADE80;
+  --untested: #EF4444;
+  --partial: #FBBF24;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 'Roboto', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-light);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* React Flow overrides */
+.react-flow__background {
+  background: var(--bg) !important;
+}
+.react-flow__minimap {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+}
+.react-flow__controls {
+  display: none; /* We use custom controls */
+}
+.react-flow__attribution {
+  display: none !important;
+}
+
+/* Selection */
+::selection {
+  background: rgba(74, 158, 255, 0.3);
+}
+
+/* Focus */
+:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Button reset */
+button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+/* Input reset */
+input, textarea {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  padding: 8px 12px;
+  font: inherit;
+  outline: none;
+}
+input:focus, textarea:focus {
+  border-color: var(--accent);
+}
+input::placeholder, textarea::placeholder {
+  color: var(--text-muted);
+}
