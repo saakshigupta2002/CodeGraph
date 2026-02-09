@@ -23,11 +23,13 @@ const nodeTypes = { custom: CustomNode };
 const edgeTypes = { smoothstep: CustomEdge };
 
 export function GraphCanvas() {
-  const { flowNodes, flowEdges, impactMode, impactResult, loading } = useGraphStore();
+  const { flowNodes, flowEdges, impactMode, impactResult, loading, truncated, totalNodeCount } = useGraphStore();
   const { setDetailPanelOpen, setContextMenu } = useUIStore();
   const { selectNode, setHoveredNode, analyzeImpact } = useGraphStore();
   const { navigateToNode } = useNavigationHistory();
   const { fitView } = useReactFlow();
+
+  const isLargeGraph = flowNodes.length > 150;
 
   const fitToScreen = useCallback(() => {
     fitView({ padding: 0.1, duration: 300 });
@@ -68,14 +70,14 @@ export function GraphCanvas() {
 
   const onNodeMouseEnter: NodeMouseHandler = useCallback(
     (_event, node) => {
-      setHoveredNode(node.id);
+      if (!isLargeGraph) setHoveredNode(node.id);
     },
-    [setHoveredNode]
+    [setHoveredNode, isLargeGraph]
   );
 
   const onNodeMouseLeave = useCallback(() => {
-    setHoveredNode(null);
-  }, [setHoveredNode]);
+    if (!isLargeGraph) setHoveredNode(null);
+  }, [setHoveredNode, isLargeGraph]);
 
   const onNodeContextMenu = useCallback(
     (event: React.MouseEvent, node: Node) => {
@@ -101,10 +103,10 @@ export function GraphCanvas() {
     [setContextMenu]
   );
 
-  // Apply hover dimming
+  // Apply hover dimming — skip for large graphs to save memory
   const { hoveredNodeId } = useGraphStore();
   const displayNodes = useMemo(() => {
-    if (!hoveredNodeId) return flowNodes;
+    if (!hoveredNodeId || isLargeGraph) return flowNodes;
 
     const connectedIds = new Set<string>();
     connectedIds.add(hoveredNodeId);
@@ -120,7 +122,7 @@ export function GraphCanvas() {
         opacity: connectedIds.has(n.id) ? 1 : 0.25,
       },
     }));
-  }, [flowNodes, flowEdges, hoveredNodeId]);
+  }, [flowNodes, flowEdges, hoveredNodeId, isLargeGraph]);
 
   if (loading) {
     return (
@@ -177,16 +179,42 @@ export function GraphCanvas() {
         style={{ background: colors.bg }}
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color={colors.border} />
-        <MiniMap
-          nodeColor={(n) => (n.data as Record<string, any>).borderColor || colors.textMuted}
-          maskColor="rgba(13, 13, 13, 0.8)"
-          style={{ width: 160, height: 100 }}
-        />
+        {!isLargeGraph && (
+          <MiniMap
+            nodeColor={(n) => (n.data as Record<string, any>).borderColor || colors.textMuted}
+            maskColor="rgba(13, 13, 13, 0.8)"
+            style={{ width: 160, height: 100 }}
+          />
+        )}
       </ReactFlow>
 
       <ZoomControls onFitToScreen={fitToScreen} />
 
       {impactResult && <ImpactSummaryBar />}
+
+      {/* Truncation warning */}
+      {truncated && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 8,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: colors.surface,
+            border: `1px solid ${colors.partial}`,
+            borderRadius: 8,
+            padding: '8px 16px',
+            fontSize: 12,
+            color: colors.partial,
+            zIndex: 10,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
+          Showing {flowNodes.length} of {totalNodeCount} nodes. Select specific files in the sidebar to see more detail.
+        </div>
+      )}
     </div>
   );
 }

@@ -6,6 +6,10 @@ import { useProjectStore } from './projectStore';
 import { getLayoutedElements } from '../utils/layout';
 import { nodeTypeColors, colors } from '../utils/colors';
 
+// Performance limits
+const MAX_RENDERED_NODES = 300;
+const MAX_RENDERED_EDGES = 500;
+
 interface GraphState {
   // Raw data from backend
   rawNodes: GraphNode[];
@@ -28,8 +32,10 @@ interface GraphState {
   impactResult: ImpactResult | null;
   impactNodeIds: string[];
 
-  // Loading
+  // Loading & limits
   loading: boolean;
+  truncated: boolean;
+  totalNodeCount: number;
 
   // Actions
   loadGraph: (projectId: string, tab?: TabType | null) => Promise<void>;
@@ -65,12 +71,28 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   impactResult: null,
   impactNodeIds: [],
   loading: false,
+  truncated: false,
+  totalNodeCount: 0,
 
   loadGraph: async (projectId, tab) => {
     set({ loading: true });
     try {
       const data = await api.getGraph(projectId, tab ?? undefined);
-      set({ rawNodes: data.nodes, rawEdges: data.edges, activeTab: tab ?? null });
+      const totalNodeCount = data.nodes.length;
+
+      // For very large projects with no file filter, auto-switch to modules zoom
+      let autoZoom = get().zoomLevel;
+      if (totalNodeCount > MAX_RENDERED_NODES && get().selectedFiles.length === 0) {
+        autoZoom = 'modules';
+      }
+
+      set({
+        rawNodes: data.nodes,
+        rawEdges: data.edges,
+        activeTab: tab ?? null,
+        totalNodeCount,
+        zoomLevel: autoZoom,
+      });
       get().updateFlowElements();
     } catch (e) {
       console.error('Failed to load graph:', e);
@@ -96,7 +118,6 @@ export const useGraphStore = create<GraphState>((set, get) => ({
 
   setHoveredNode: (nodeId) => {
     set({ hoveredNodeId: nodeId });
-    // We handle visual dimming in the component via flowNodes update
   },
 
   setActiveTab: (tab) => {
@@ -172,11 +193,23 @@ export const useGraphStore = create<GraphState>((set, get) => ({
     if (selectedFiles.length > 0) {
       const fileSet = new Set(selectedFiles);
       filteredNodes = filteredNodes.filter(
-        (n) => fileSet.has(n.file_path) || n.type === 'file' && fileSet.has(n.file_path)
+        (n) => fileSet.has(n.file_path) || (n.type === 'file' && fileSet.has(n.file_path))
       );
     }
 
+    // Enforce node limit to prevent memory exhaustion
+    let truncated = false;
+    if (filteredNodes.length > MAX_RENDERED_NODES) {
+      truncated = true;
+      // Prioritize: selected files' nodes first, then by type (classes > functions > rest)
+      const typePriority: Record<string, number> = { class: 0, file: 1, function: 2, variable: 3, import: 4, module: 5 };
+      filteredNodes = [...filteredNodes]
+        .sort((a, b) => (typePriority[a.type] ?? 9) - (typePriority[b.type] ?? 9))
+        .slice(0, MAX_RENDERED_NODES);
+    }
+
     const nodeIds = new Set(filteredNodes.map((n) => n.id));
+    const isLargeGraph = filteredNodes.length > 150;
 
     // Build impact sets for coloring
     const selectedSet = new Set(impactNodeIds);
@@ -217,36 +250,41 @@ export const useGraphStore = create<GraphState>((set, get) => ({
       };
     });
 
-    // Convert to React Flow edges
-    const flowEdges: Edge[] = rawEdges
-      .filter((e) => nodeIds.has(e.source_id) && nodeIds.has(e.target_id))
-      .map((e) => {
-        let strokeColor: string = colors.edgeDefault;
-        let strokeWidth = 1.5;
+    // Convert to React Flow edges — cap count for performance
+    let filteredEdges = rawEdges.filter((e) => nodeIds.has(e.source_id) && nodeIds.has(e.target_id));
+    if (filteredEdges.length > MAX_RENDERED_EDGES) {
+      // Prioritize calls and inherits edges
+      const edgePriority: Record<string, number> = { calls: 0, inherits: 1, imports: 2, composes: 3, reads: 4, writes: 5, tests: 6 };
+      filteredEdges = [...filteredEdges]
+        .sort((a, b) => (edgePriority[a.type] ?? 9) - (edgePriority[b.type] ?? 9))
+        .slice(0, MAX_RENDERED_EDGES);
+    }
 
-        if (e.type === 'calls') strokeWidth = 2;
-        if (e.type === 'inherits') strokeColor = colors.nodeClass;
-        if (e.type === 'imports') strokeColor = colors.nodeImport;
-        if (e.metadata?.is_external) strokeColor = colors.textMuted;
+    const flowEdges: Edge[] = filteredEdges.map((e) => {
+      let strokeColor: string = colors.edgeDefault;
+      let strokeWidth = 1.5;
 
-        // Variable tab: read/write coloring
-        if (e.type === 'reads') strokeColor = colors.edgeRead;
-        if (e.type === 'writes') strokeColor = colors.edgeWrite;
+      if (e.type === 'calls') strokeWidth = 2;
+      if (e.type === 'inherits') strokeColor = colors.nodeClass;
+      if (e.type === 'imports') strokeColor = colors.nodeImport;
+      if (e.metadata?.is_external) strokeColor = colors.textMuted;
+      if (e.type === 'reads') strokeColor = colors.edgeRead;
+      if (e.type === 'writes') strokeColor = colors.edgeWrite;
 
-        return {
-          id: `e-${e.source_id}-${e.target_id}`,
-          source: e.source_id,
-          target: e.target_id,
-          type: 'smoothstep',
-          animated: e.type === 'calls',
-          style: { stroke: strokeColor as string, strokeWidth },
-          markerEnd: { type: 'arrowclosed' as const, color: strokeColor as string },
-          data: { edgeType: e.type },
-        };
-      });
+      return {
+        id: `e-${e.source_id}-${e.target_id}`,
+        source: e.source_id,
+        target: e.target_id,
+        type: 'smoothstep',
+        animated: !isLargeGraph && e.type === 'calls', // Disable animation on large graphs
+        style: { stroke: strokeColor as string, strokeWidth },
+        markerEnd: { type: 'arrowclosed' as const, color: strokeColor as string },
+        data: { edgeType: e.type },
+      };
+    });
 
     // Apply layout
     const layouted = getLayoutedElements(flowNodes, flowEdges);
-    set({ flowNodes: layouted.nodes, flowEdges: layouted.edges });
+    set({ flowNodes: layouted.nodes, flowEdges: layouted.edges, truncated });
   },
 }));
