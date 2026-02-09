@@ -1,5 +1,5 @@
 // Dagre layout helpers for React Flow
-import dagre from '@dagrejs/dagre';
+import dagre from 'dagre';
 import type { Edge, Node } from '@xyflow/react';
 
 const NODE_WIDTH = 200;

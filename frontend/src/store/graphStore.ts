@@ -83,7 +83,6 @@ export const useGraphStore = create<GraphState>((set, get) => ({
     set({ selectedNodeId: nodeId, nodeDetail: null });
     if (!nodeId) return;
 
-    const { useProjectStore } = await import('./projectStore');
     const projectId = useProjectStore.getState().currentProject?.id;
     if (!projectId) return;
 
@@ -141,7 +140,6 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   },
 
   analyzeImpact: async (nodeIds) => {
-    const { useProjectStore } = await import('./projectStore');
     const projectId = useProjectStore.getState().currentProject?.id;
     if (!projectId) return;
 
