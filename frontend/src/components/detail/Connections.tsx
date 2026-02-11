@@ -3,6 +3,14 @@ import { useNavigationHistory } from '../../hooks/useNavigationHistory';
 import { colors } from '../../utils/colors';
 import type { ConnectionItem } from '../../types';
 
+const edgeTypeColor: Record<string, string> = {
+  calls: colors.nodeFunction,
+  inherits: colors.nodeClass,
+  imports: colors.nodeImport,
+  reads: colors.edgeRead,
+  writes: colors.edgeWrite,
+};
+
 interface Props {
   calls: ConnectionItem[];
   calledBy: ConnectionItem[];
@@ -33,8 +41,8 @@ export function Connections({ calls, calledBy }: Props) {
           <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 4 }}>
             Calls ({calls.length})
           </div>
-          {calls.map((item) => (
-            <ConnectionRow key={item.id} item={item} icon={<ArrowUpRight size={12} />} onClick={() => navigateToNode(item.id)} />
+          {calls.map((item, index) => (
+            <ConnectionRow key={item.id} item={item} index={index + 1} icon={<ArrowUpRight size={12} />} onClick={() => navigateToNode(item.id)} />
           ))}
         </div>
       )}
@@ -49,10 +57,12 @@ export function Connections({ calls, calledBy }: Props) {
 }
 
 function ConnectionRow({
-  item, icon, onClick,
+  item, icon, index, onClick,
 }: {
-  item: ConnectionItem; icon: React.ReactNode; onClick: () => void;
+  item: ConnectionItem; icon: React.ReactNode; index?: number; onClick: () => void;
 }) {
+  const location = item.file_path + (item.line_start ? `:${item.line_start}` : '');
+
   return (
     <button
       onClick={onClick}
@@ -70,11 +80,26 @@ function ConnectionRow({
       onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = colors.surfaceHover; }}
       onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
     >
-      <span style={{ color: colors.textMuted }}>{icon}</span>
+      {index != null && (
+        <span style={{ fontSize: 10, color: colors.textMuted, width: 16, flexShrink: 0 }}>{index}.</span>
+      )}
+      <span style={{ color: colors.textMuted, flexShrink: 0 }}>{icon}</span>
       <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {item.name}
       </span>
-      <span style={{ fontSize: 10, color: colors.textMuted }}>{item.file_path}</span>
+      <span style={{
+        fontSize: 9,
+        color: edgeTypeColor[item.type] || colors.textMuted,
+        flexShrink: 0,
+        padding: '1px 4px',
+        borderRadius: 3,
+        background: `${edgeTypeColor[item.type] || colors.textMuted}15`,
+      }}>
+        {item.type}
+      </span>
+      <span style={{ fontSize: 10, color: colors.textMuted, flexShrink: 0, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {location}
+      </span>
     </button>
   );
 }

@@ -25,6 +25,9 @@ interface UIState {
   // Breadcrumbs
   breadcrumbs: { label: string; path?: string }[];
 
+  // Graph display toggles
+  showEdgeLabels: boolean;
+
   // First time
   showOnboarding: boolean;
 
@@ -53,6 +56,9 @@ interface UIState {
   navigateBack: () => string | null;
   setBreadcrumbs: (crumbs: { label: string; path?: string }[]) => void;
 
+  // Graph display toggles
+  toggleEdgeLabels: () => void;
+
   // Onboarding
   dismissOnboarding: () => void;
 
@@ -75,6 +81,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   navigationHistory: [],
   historyIndex: -1,
   breadcrumbs: [],
+  showEdgeLabels: false,
   showOnboarding: !localStorage.getItem('codegraph_onboarded'),
 
   openSearch: () => set({ searchOpen: true }),
@@ -142,6 +149,10 @@ export const useUIStore = create<UIState>((set, get) => ({
   },
 
   setBreadcrumbs: (crumbs) => set({ breadcrumbs: crumbs }),
+
+  toggleEdgeLabels: () => {
+    set({ showEdgeLabels: !get().showEdgeLabels });
+  },
 
   dismissOnboarding: () => {
     localStorage.setItem('codegraph_onboarded', 'true');

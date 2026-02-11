@@ -97,12 +97,14 @@ async def get_node_detail(project_id: str, node_id: str, session: AsyncSession =
 
     calls = [
         {"id": e.target_id, "name": connected_nodes[e.target_id].name, "type": e.type,
-         "file_path": connected_nodes[e.target_id].file_path}
+         "file_path": connected_nodes[e.target_id].file_path,
+         "line_start": connected_nodes[e.target_id].line_start}
         for e in outgoing if e.target_id in connected_nodes
     ]
     called_by = [
         {"id": e.source_id, "name": connected_nodes[e.source_id].name, "type": e.type,
-         "file_path": connected_nodes[e.source_id].file_path}
+         "file_path": connected_nodes[e.source_id].file_path,
+         "line_start": connected_nodes[e.source_id].line_start}
         for e in incoming if e.source_id in connected_nodes
     ]
 

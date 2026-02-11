@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Zap, Expand, Minimize2, Sparkles, Copy, ExternalLink, Maximize2, RotateCcw, Download } from 'lucide-react';
+import { Zap, Expand, Minimize2, Sparkles, Copy, ExternalLink, Maximize2, RotateCcw, Download, Route } from 'lucide-react';
 import { useUIStore } from '../../store/uiStore';
 import { useGraphStore } from '../../store/graphStore';
 import { useNavigationHistory } from '../../hooks/useNavigationHistory';
@@ -7,7 +7,7 @@ import { colors } from '../../utils/colors';
 
 export function ContextMenu() {
   const { contextMenu, setContextMenu, setFileModal } = useUIStore();
-  const { analyzeImpact } = useGraphStore();
+  const { analyzeImpact, traceFlow } = useGraphStore();
   const { navigateToNode } = useNavigationHistory();
   const ref = useRef<HTMLDivElement>(null);
 
@@ -22,6 +22,7 @@ export function ContextMenu() {
   const { nodeId } = contextMenu;
 
   const nodeItems = nodeId ? [
+    { icon: Route, label: 'Trace call flow', action: () => traceFlow(nodeId) },
     { icon: Zap, label: 'Analyze impact', action: () => analyzeImpact([nodeId]) },
     { icon: Expand, label: 'Expand connections', action: () => navigateToNode(nodeId) },
     { icon: Minimize2, label: 'Collapse node', action: () => {} },

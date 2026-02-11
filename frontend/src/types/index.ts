@@ -69,6 +69,20 @@ export interface ConnectionItem {
   name: string;
   type: string;
   file_path: string;
+  line_start?: number | null;
+}
+
+export interface FlowTraceStep {
+  nodeId: string;
+  depth: number;
+  order: number;
+  parentEdgeId: string;
+}
+
+export interface FlowTraceResult {
+  origin: string;
+  chain: FlowTraceStep[];
+  edgeOrder: Map<string, number>;
 }
 
 export interface TestStatus {

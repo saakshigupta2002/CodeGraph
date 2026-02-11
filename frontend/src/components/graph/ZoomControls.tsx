@@ -1,5 +1,6 @@
-import { Maximize2 } from 'lucide-react';
+import { Maximize2, Tag } from 'lucide-react';
 import { useGraphStore } from '../../store/graphStore';
+import { useUIStore } from '../../store/uiStore';
 import { colors } from '../../utils/colors';
 import type { ZoomLevel } from '../../types';
 
@@ -14,7 +15,8 @@ interface Props {
 }
 
 export function ZoomControls({ onFitToScreen }: Props) {
-  const { zoomLevel, setZoomLevel } = useGraphStore();
+  const { zoomLevel, setZoomLevel, updateFlowElements } = useGraphStore();
+  const { showEdgeLabels, toggleEdgeLabels } = useUIStore();
 
   return (
     <div
@@ -69,6 +71,22 @@ export function ZoomControls({ onFitToScreen }: Props) {
         title="Fit to screen (F)"
       >
         <Maximize2 size={16} />
+      </button>
+
+      <button
+        onClick={() => { toggleEdgeLabels(); updateFlowElements(); }}
+        style={{
+          padding: 6,
+          background: showEdgeLabels ? colors.surfaceHover : colors.surface,
+          border: `1px solid ${showEdgeLabels ? colors.accent : colors.border}`,
+          borderRadius: 8,
+          color: showEdgeLabels ? colors.accent : colors.textSecondary,
+          display: 'flex',
+          alignItems: 'center',
+        }}
+        title="Toggle edge labels"
+      >
+        <Tag size={16} />
       </button>
     </div>
   );

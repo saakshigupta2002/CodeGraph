@@ -23,7 +23,7 @@ const nodeTypes = { custom: CustomNode };
 const edgeTypes = { smoothstep: CustomEdge };
 
 export function GraphCanvas() {
-  const { flowNodes, flowEdges, impactMode, impactResult, loading, truncated, totalNodeCount } = useGraphStore();
+  const { flowNodes, flowEdges, impactMode, impactResult, flowTraceResult, clearFlowTrace, rawNodes, loading, truncated, totalNodeCount } = useGraphStore();
   const { setDetailPanelOpen, setContextMenu } = useUIStore();
   const { selectNode, setHoveredNode, analyzeImpact } = useGraphStore();
   const { navigateToNode } = useNavigationHistory();
@@ -191,6 +191,39 @@ export function GraphCanvas() {
       <ZoomControls onFitToScreen={fitToScreen} />
 
       {impactResult && <ImpactSummaryBar />}
+
+      {/* Flow trace summary bar */}
+      {flowTraceResult && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 56,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: colors.surface,
+            border: `1px solid ${colors.accent}`,
+            borderRadius: 8,
+            padding: '8px 16px',
+            fontSize: 12,
+            color: colors.accent,
+            zIndex: 10,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+          }}
+        >
+          <span>
+            Tracing from <strong>{rawNodes.find((n) => n.id === flowTraceResult.origin)?.name ?? '...'}</strong>
+            {' \u2014 '}{flowTraceResult.chain.length} downstream call{flowTraceResult.chain.length !== 1 ? 's' : ''}
+          </span>
+          <button
+            onClick={clearFlowTrace}
+            style={{ color: colors.textMuted, fontSize: 11, textDecoration: 'underline' }}
+          >
+            Clear
+          </button>
+        </div>
+      )}
 
       {/* Truncation warning */}
       {truncated && (
